@@ -17,24 +17,38 @@ export default function StoryGenie() {
     setImage("");
 
     try {
-      const res = await fetch("/.netlify/functions/generateStory", {
+      // ======================
+      // 1️⃣ TEXT
+      // ======================
+      const textRes = await fetch("/.netlify/functions/storyText", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
 
-      if (!res.ok) {
-        throw new Error("Server error");
-      }
+      const textData = await textRes.json();
 
-      const data = await res.json();
+      setTitle(textData.title);
+      setStory(textData.story);
 
-      setTitle(data.title);
-      setStory(data.story);
-      setImage(data.imageUrl || "");
+      // ======================
+      // 2️⃣ IMAGE
+      // ======================
+      const imgRes = await fetch("/.netlify/functions/storyImage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: textData.title,
+          prompt,
+        }),
+      });
+
+      const imgData = await imgRes.json();
+
+      setImage(imgData.imageUrl);
     } catch (err) {
       console.error(err);
-      alert("Something went wrong generating the story.");
+      alert("StoryGenie magic failed 😢");
     }
 
     setLoading(false);
@@ -55,11 +69,7 @@ export default function StoryGenie() {
           onChange={(e) => setPrompt(e.target.value)}
         />
 
-        <button
-          className="btn btn-primary mt-3 w-100"
-          onClick={generateStory}
-          disabled={loading}
-        >
+        <button className="btn btn-primary mt-3 w-100" onClick={generateStory}>
           {loading ? "Summoning Magic..." : "Generate Story"}
         </button>
 
