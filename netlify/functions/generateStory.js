@@ -19,61 +19,58 @@ export const handler = async (event) => {
       };
     }
 
-    // ======================
-    // 1️⃣ STORY GENERATION
-    // ======================
+    // ============================
+    // 1️⃣ TEXT GENERATION
+    // ============================
     const textResponse = await openai.responses.create({
       model: "gpt-4.1-mini",
-      input: [
-        {
-          role: "system",
-          content: "You are StoryGenie, a magical storyteller.",
-        },
-        {
-          role: "user",
-          content: `Return ONLY valid JSON like this:
+      input: `
+You are StoryGenie, a magical storyteller.
+
+Create:
+1. A creative title
+2. A short story
+
+Return JSON only:
 {
   "title": "...",
   "story": "..."
 }
 
-Topic: ${prompt}`,
-        },
-      ],
-      response_format: { type: "json_object" },
+Topic: ${prompt}
+      `,
       temperature: 0.9,
-      max_output_tokens: 500,
+      max_output_tokens: 400,
+      text: {
+        format: { type: "json_object" },
+      },
     });
 
-    const parsed = textResponse.output_parsed;
+    const rawText = textResponse.output_text;
 
-    if (!parsed?.title || !parsed?.story) {
-      throw new Error("Invalid story response from OpenAI");
+    if (!rawText) {
+      throw new Error("No text returned from OpenAI");
     }
 
-    // ======================
+    const parsed = JSON.parse(rawText);
+
+    // ============================
     // 2️⃣ IMAGE GENERATION
-    // ======================
+    // ============================
     const imageResponse = await openai.images.generate({
       model: "gpt-image-1",
-      prompt: `Fantasy illustration for "${parsed.title}". ${prompt}. cinematic lighting, digital art, high detail`,
+      prompt: `Fantasy illustration for a story titled "${parsed.title}". ${prompt}, cinematic lighting, digital art.`,
       size: "1024x1024",
     });
 
-    if (!imageResponse.data?.length) {
-      throw new Error("Image generation failed");
-    }
-
     const imageUrl = imageResponse.data[0].url;
 
-    // ======================
+    // ============================
     // ✅ FINAL RESPONSE
-    // ======================
+    // ============================
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: parsed.title,
         story: parsed.story,
@@ -87,7 +84,7 @@ Topic: ${prompt}`,
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        error: error.message || "Internal Server Error",
+        error: error.message || "Story generation failed",
       }),
     };
   }
