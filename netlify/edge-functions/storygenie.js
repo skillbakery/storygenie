@@ -9,7 +9,7 @@ export default async (request, context) => {
     const { prompt } = await request.json();
 
     if (!prompt) {
-      return new Response(JSON.stringify({ error: "Prompt is required" }), {
+      return new Response(JSON.stringify({ error: "Prompt required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -19,56 +19,54 @@ export default async (request, context) => {
       apiKey: Netlify.env.get("OPENAI_API_KEY"),
     });
 
-    // 1️⃣ TEXT
-    const textResponse = await openai.responses.create({
+    // ======================
+    // TEXT + IMAGE IN ONE CALL
+    // ======================
+    const response = await openai.responses.create({
       model: "gpt-4.1-mini",
-      input: [
-        { role: "system", content: "You are StoryGenie. Return valid JSON only." },
-        { role: "user", content: `Create a title and story about: ${prompt}` },
-      ],
+
+      input: `
+You are StoryGenie.
+
+Return valid JSON:
+{
+  "title": "...",
+  "story": "...",
+  "image_prompt": "..."
+}
+
+Topic: ${prompt}
+      `,
+
+      temperature: 0.9,
+      max_output_tokens: 500,
+
+      // ✅ REQUIRED NOW
       text: {
-        format: {
-          type: "json_schema",
-          json_schema: {
-            name: "story",
-            schema: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                story: { type: "string" },
-              },
-              required: ["title", "story"],
-            },
-          },
-        },
+        format: { name: "json" },
       },
-      max_output_tokens: 250,
-      temperature: 0.8,
     });
 
-    const parsed = textResponse.output_parsed;
+    const outputText =
+      response.output_text ||
+      response.output?.[0]?.content?.[0]?.text;
 
-    // 2️⃣ IMAGE
-    const imageResponse = await openai.images.generate({
-      model: "gpt-image-1",
-      prompt: `Fantasy illustration for "${parsed.title}". ${prompt}, cinematic lighting, digital art`,
-      size: "1024x1024",
-    });
+    const parsed = JSON.parse(outputText);
 
     return new Response(
       JSON.stringify({
         title: parsed.title,
         story: parsed.story,
-        imageUrl: imageResponse.data[0].url,
+        imagePrompt: parsed.image_prompt,
       }),
       {
         headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (error) {
-    console.error("Edge error:", error);
+  } catch (err) {
+    console.error("Edge error:", err);
 
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
