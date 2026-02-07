@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export default async (request: Request) => {
+export default async (request, context) => {
   try {
     if (request.method !== "POST") {
       return new Response("Method Not Allowed", { status: 405 });
@@ -11,6 +11,7 @@ export default async (request: Request) => {
     if (!prompt) {
       return new Response(JSON.stringify({ error: "Prompt is required" }), {
         status: 400,
+        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -18,20 +19,12 @@ export default async (request: Request) => {
       apiKey: Netlify.env.get("OPENAI_API_KEY"),
     });
 
-    // ======================
     // 1️⃣ TEXT
-    // ======================
     const textResponse = await openai.responses.create({
       model: "gpt-4.1-mini",
       input: [
-        {
-          role: "system",
-          content: "You are StoryGenie. Return valid JSON only.",
-        },
-        {
-          role: "user",
-          content: `Create a short title and story about: ${prompt}`,
-        },
+        { role: "system", content: "You are StoryGenie. Return valid JSON only." },
+        { role: "user", content: `Create a title and story about: ${prompt}` },
       ],
       text: {
         format: {
@@ -55,9 +48,7 @@ export default async (request: Request) => {
 
     const parsed = textResponse.output_parsed;
 
-    // ======================
     // 2️⃣ IMAGE
-    // ======================
     const imageResponse = await openai.images.generate({
       model: "gpt-image-1",
       prompt: `Fantasy illustration for "${parsed.title}". ${prompt}, cinematic lighting, digital art`,
@@ -74,7 +65,7 @@ export default async (request: Request) => {
         headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Edge error:", error);
 
     return new Response(JSON.stringify({ error: error.message }), {
