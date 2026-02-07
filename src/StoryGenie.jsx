@@ -17,11 +17,11 @@ export default function StoryGenie() {
   setImage("");
 
   try {
-    const res = await fetch("/.netlify/edge-functions/storygenie", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    });
+    const res = await fetch("/api/storygenie", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ prompt }),
+});
 
     const data = await res.json();
 
