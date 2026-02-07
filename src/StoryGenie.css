@@ -1,0 +1,51 @@
+body {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
+}
+
+.genie-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.genie-card {
+    background: rgba(30, 41, 59, 0.9);
+    border-radius: 20px;
+    max-width: 420px;
+    width: 100%;
+}
+
+.avatar {
+    font-size: 80px;
+    animation: float 3s ease-in-out infinite;
+    text-shadow: 0 0 20px #38bdf8;
+}
+
+.story-box {
+    background: #020617;
+    padding: 15px;
+    border-radius: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+.story-image {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+    margin-bottom: 10px;
+}
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
