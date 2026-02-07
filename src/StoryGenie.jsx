@@ -1,6 +1,6 @@
 import { useState } from "react";
 import OpenAI from "openai";
-import "./storygenie.css";
+import "./StoryGenie.css";
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_KEY,
