@@ -8,51 +8,33 @@ export default function StoryGenie() {
   const [image, setImage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const generateStory = async () => {
-    if (!prompt) return;
+ const generateStory = async () => {
+  if (!prompt) return;
 
-    setLoading(true);
-    setStory("");
-    setTitle("");
-    setImage("");
+  setLoading(true);
+  setStory("");
+  setTitle("");
+  setImage("");
 
-    try {
-      // ======================
-      // 1️⃣ TEXT
-      // ======================
-      const textRes = await fetch("/.netlify/functions/storyText", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
+  try {
+    const res = await fetch("/.netlify/edge-functions/storygenie", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
 
-      const textData = await textRes.json();
+    const data = await res.json();
 
-      setTitle(textData.title);
-      setStory(textData.story);
+    setTitle(data.title);
+    setStory(data.story);
+    setImage(data.imageUrl);
+  } catch (err) {
+    console.error(err);
+    alert("StoryGenie magic failed 😢");
+  }
 
-      // ======================
-      // 2️⃣ IMAGE
-      // ======================
-      const imgRes = await fetch("/.netlify/functions/storyImage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: textData.title,
-          prompt,
-        }),
-      });
-
-      const imgData = await imgRes.json();
-
-      setImage(imgData.imageUrl);
-    } catch (err) {
-      console.error(err);
-      alert("StoryGenie magic failed 😢");
-    }
-
-    setLoading(false);
-  };
+  setLoading(false);
+};
 
   return (
     <div className="container genie-container text-center">
