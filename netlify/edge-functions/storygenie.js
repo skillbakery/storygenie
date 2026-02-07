@@ -19,9 +19,6 @@ export default async (request, context) => {
       apiKey: Netlify.env.get("OPENAI_API_KEY"),
     });
 
-    // ======================
-    // TEXT + IMAGE IN ONE CALL
-    // ======================
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",
 
@@ -41,15 +38,21 @@ Topic: ${prompt}
       temperature: 0.9,
       max_output_tokens: 500,
 
-      // ✅ REQUIRED NOW
+      // ✅ REQUIRED FIELDS
       text: {
-        format: { name: "json" },
+        format: {
+          type: "json",
+        },
       },
     });
 
     const outputText =
       response.output_text ||
       response.output?.[0]?.content?.[0]?.text;
+
+    if (!outputText) {
+      throw new Error("No output received from OpenAI");
+    }
 
     const parsed = JSON.parse(outputText);
 
