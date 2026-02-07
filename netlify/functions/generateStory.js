@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // ✅ stored in Netlify env
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const handler = async (event) => {
@@ -20,44 +20,49 @@ export const handler = async (event) => {
     }
 
     // ======================
-    // 1️⃣ TEXT GENERATION
+    // 1️⃣ STORY GENERATION
     // ======================
     const textResponse = await openai.responses.create({
       model: "gpt-4.1-mini",
-      input: `
-You are StoryGenie, a magical storyteller.
-
-Return valid JSON:
+      input: [
+        {
+          role: "system",
+          content: "You are StoryGenie, a magical storyteller.",
+        },
+        {
+          role: "user",
+          content: `Return ONLY valid JSON like this:
 {
   "title": "...",
   "story": "..."
 }
 
-Topic: ${prompt}
-      `,
+Topic: ${prompt}`,
+        },
+      ],
+      response_format: { type: "json_object" },
       temperature: 0.9,
-      max_output_tokens: 400,
+      max_output_tokens: 500,
     });
 
-    const rawText =
-      textResponse.output_text ||
-      textResponse.output?.[0]?.content?.[0]?.text;
+    const parsed = textResponse.output_parsed;
 
-    const cleanText = rawText
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
-
-    const parsed = JSON.parse(cleanText);
+    if (!parsed?.title || !parsed?.story) {
+      throw new Error("Invalid story response from OpenAI");
+    }
 
     // ======================
     // 2️⃣ IMAGE GENERATION
     // ======================
     const imageResponse = await openai.images.generate({
       model: "gpt-image-1",
-      prompt: `Fantasy illustration for "${parsed.title}". ${prompt}, cinematic lighting, digital art`,
+      prompt: `Fantasy illustration for "${parsed.title}". ${prompt}. cinematic lighting, digital art, high detail`,
       size: "1024x1024",
     });
+
+    if (!imageResponse.data?.length) {
+      throw new Error("Image generation failed");
+    }
 
     const imageUrl = imageResponse.data[0].url;
 
@@ -81,7 +86,9 @@ Topic: ${prompt}
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({
+        error: error.message || "Internal Server Error",
+      }),
     };
   }
 };
