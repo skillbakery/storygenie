@@ -41,7 +41,7 @@ Topic: ${prompt}
       // ✅ REQUIRED FIELDS
       text: {
         format: {
-          type: "json",
+          type: "json_object",
         },
       },
     });
